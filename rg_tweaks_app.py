@@ -9,26 +9,88 @@ ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "RG2026")
 # تخزين التذاكر حسب معرّف التذكرة (يمكن استبداله بقاعدة بيانات للاستمرارية الدائمة)
 TICKETS = {}
 
-# محتوى ملف RG_TWEAKS_PRO.bat الذي يتم تحميله بعد اعتماد الأدمن
+# محتوى ملف RG_TWEAKS_PRO.bat المطور مع نقطة استعادة تلقائية في البداية
 BAT_SCRIPT_CONTENT = """@echo off\r
-title RG TWEAKS PRO - System & Network Optimizer\r
+title RG TWEAKS PRO MAX - Performance & Bloatware Cleaner\r
 color 0A\r
 \r
-echo ==================================================\r
-echo        RG TWEAKS PRO - ACTIVATED SUCCESSFULLY\r
-echo ==================================================\r
+net session >nul 2>&1\r
+if %errorLevel% neq 0 (\r
+    echo [!] Please run this file as Administrator (Run as administrator).\r
+    pause\r
+    exit /b 1\r
+)\r
+\r
+echo ==========================================================\r
+echo       RG TWEAKS PRO MAX - ACTIVATED SUCCESSFULLY\r
+echo ==========================================================\r
 echo.\r
-echo [+] Flushing DNS cache...\r
+echo [0/5] Creating a System Restore Point...\r
+powershell -NoProfile -Command "Enable-ComputerRestore -Drive 'C:\\' -ErrorAction SilentlyContinue; Checkpoint-Computer -Description 'RG Tweaks Pro Restore Point' -RestorePointType 'MODIFY_SETTINGS' -ErrorAction SilentlyContinue" >nul 2>&1\r
+\r
+echo [1/5] Setting High Performance power plan...\r
+powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c >nul 2>&1\r
+powercfg /change monitor-timeout-ac 0 >nul 2>&1\r
+powercfg /change standby-timeout-ac 0 >nul 2>&1\r
+\r
+echo [2/5] Stopping non-essential background services...\r
+for %%S in (\r
+    "DiagTrack"\r
+    "dmwappushservice"\r
+    "SysMain"\r
+    "WSearch"\r
+    "Fax"\r
+    "MapsBroker"\r
+    "RetailDemo"\r
+    "XblAuthManager"\r
+    "XblGameSave"\r
+    "XboxNetApiSvc"\r
+) do (\r
+    sc stop %%~S >nul 2>&1\r
+    sc config %%~S start= disabled >nul 2>&1\r
+)\r
+\r
+echo [3/5] Removing unused built-in Windows apps (keeping personal apps)...\r
+for %%A in (\r
+    "Microsoft.549981C3F5F10"\r
+    "Microsoft.BingNews"\r
+    "Microsoft.BingWeather"\r
+    "Microsoft.Clipchamp.Clipchamp"\r
+    "Microsoft.GetHelp"\r
+    "Microsoft.Getstarted"\r
+    "Microsoft.MicrosoftSolitaireCollection"\r
+    "Microsoft.People"\r
+    "Microsoft.PowerAutomateDesktop"\r
+    "Microsoft.Todos"\r
+    "Microsoft.YourPhone"\r
+    "Microsoft.ZuneMusic"\r
+    "Microsoft.ZuneVideo"\r
+    "Microsoft.GamingApp"\r
+    "Microsoft.Xbox.TCUI"\r
+    "Microsoft.XboxGameOverlay"\r
+    "Microsoft.XboxGamingOverlay"\r
+    "Microsoft.XboxIdentityProvider"\r
+    "Microsoft.XboxSpeechToTextOverlay"\r
+) do (\r
+    powershell -NoProfile -Command "Get-AppxPackage -AllUsers *%%~A* | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue; Get-AppXProvisionedPackage -Online | Where-Object {$_.DisplayName -like '*%%~A*'} | Remove-AppXProvisionedPackage -Online -ErrorAction SilentlyContinue" >nul 2>&1\r
+)\r
+\r
+echo [4/5] Attempting to remove Microsoft Edge...\r
+winget uninstall --id Microsoft.Edge --silent --accept-source-agreements >nul 2>&1\r
+winget uninstall --id Microsoft.EdgeWebView2Runtime --silent --accept-source-agreements >nul 2>&1\r
+for /f "delims=" %%I in ('reg query "HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients" 2^>nul ^| findstr /i "{"') do (\r
+    for /f "tokens=2*" %%V in ('reg query "%%I\\Commands\\uninstall" /v Command 2^>nul ^| findstr /i "Command"') do (\r
+        cmd /c "%%W --force-uninstall" >nul 2>&1\r
+    )\r
+)\r
+\r
+echo [5/5] Flushing DNS, Winsock and clearing temporary files...\r
 ipconfig /flushdns >nul 2>&1\r
-\r
-echo [+] Resetting Winsock catalog...\r
 netsh winsock reset >nul 2>&1\r
-\r
-echo [+] Clearing temporary user files...\r
 del /q /f /s "%temp%\\*" >nul 2>&1\r
 \r
 echo.\r
-echo [OK] Done! Enjoy smooth performance.\r
+echo [OK] Completed! Restart your PC to apply all changes cleanly.\r
 pause\r
 """
 
