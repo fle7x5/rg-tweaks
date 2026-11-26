@@ -1,6 +1,6 @@
 import os
 import secrets
-from flask import Flask, request, render_template_string, Response, session, redirect, url_for
+from flask import Flask, request, render_template_string, Response, session
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "RG_TWEAKS_SECRET_KEY_2026")
@@ -10,18 +10,26 @@ ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "RG2026")
 TICKETS = {}
 
 # محتوى ملف RG_TWEAKS_PRO.bat الذي يتم تحميله بعد اعتماد الأدمن
-BAT_SCRIPT_CONTENT = """@echo off
-chcp 65001 >nul
-title RG TWEAKS PRO - Optimizer
-color 0A
-echo ==================================================
-echo        RG TWEAKS PRO - ACTIVATED SUCCESSFULLY
-echo ==================================================
-echo.
-echo Applying safe system & network tweaks...
-ipconfig /flushdns >nul 2>&1
-echo Done! Enjoy smooth performance.
-pause
+BAT_SCRIPT_CONTENT = """@echo off\r
+title RG TWEAKS PRO - System & Network Optimizer\r
+color 0A\r
+\r
+echo ==================================================\r
+echo        RG TWEAKS PRO - ACTIVATED SUCCESSFULLY\r
+echo ==================================================\r
+echo.\r
+echo [+] Flushing DNS cache...\r
+ipconfig /flushdns >nul 2>&1\r
+\r
+echo [+] Resetting Winsock catalog...\r
+netsh winsock reset >nul 2>&1\r
+\r
+echo [+] Clearing temporary user files...\r
+del /q /f /s "%temp%\\*" >nul 2>&1\r
+\r
+echo.\r
+echo [OK] Done! Enjoy smooth performance.\r
+pause\r
 """
 
 HTML_PAGE = """<!DOCTYPE html>
@@ -336,7 +344,6 @@ def ticket_message(ticket_id: str):
     sender_label = "الأدمن" if is_admin_logged_in() else ticket["customer_name"]
     ticket["messages"].append({"sender": sender_label, "text": text})
 
-    # لا يتم حذف التذكرة تلقائياً عند كتابة "تم"؛ يبقى الحذف للأدمن فقط
     return render_main("تم إرسال رسالتك وحفظها داخل التذكرة.", "success")
 
 
